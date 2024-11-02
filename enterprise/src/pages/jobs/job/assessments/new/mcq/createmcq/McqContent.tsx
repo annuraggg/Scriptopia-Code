@@ -8,39 +8,25 @@ import CSVImportModal from "./CsvImportModal";
 import { Question, McqContentProps } from "../../../../../../../types/mcq.types";
 import { toast } from "@/components/ui/use-toast";
 
-interface SectionQuestions {
-    [sectionId: number]: Question[];
-}
-
-const McqContent: React.FC<McqContentProps> = ({ selectedSection }) => {
+const McqContent: React.FC<McqContentProps> = ({
+    selectedSection,
+    questions,
+    onAddQuestion,
+    onUpdateQuestion,
+    onDeleteQuestion,
+}) => {
     const [isModalOpen, setModalOpen] = useState(false);
     const [isCSVOpen, setCSVOpen] = useState(false);
-    const [sectionQuestions, setSectionQuestions] = useState<SectionQuestions>({});
     const [editingQuestion, setEditingQuestion] = useState<Question | null>(null);
 
-    const currentQuestions = selectedSection
-        ? sectionQuestions[selectedSection.id] || []
-        : [];
-
-    const handleAddQuestion = (newQuestion: Question) => {
+    const handleAddQuestion = (question: Question) => {
         if (!selectedSection) return;
 
         if (editingQuestion) {
-            setSectionQuestions(prev => ({
-                ...prev,
-                [selectedSection.id]: prev[selectedSection.id].map(q =>
-                    q.id === editingQuestion.id ? newQuestion : q
-                )
-            }));
+            onUpdateQuestion(question);
             setEditingQuestion(null);
         } else {
-            setSectionQuestions(prev => ({
-                ...prev,
-                [selectedSection.id]: [
-                    ...(prev[selectedSection.id] || []),
-                    newQuestion
-                ]
-            }));
+            onAddQuestion(question);
         }
         setModalOpen(false);
     };
@@ -48,39 +34,34 @@ const McqContent: React.FC<McqContentProps> = ({ selectedSection }) => {
     const handleMoveUp = (id: number) => {
         if (!selectedSection) return;
 
-        const questions = currentQuestions;
         const index = questions.findIndex(q => q.id === id);
         if (index > 0) {
             const newQuestions = [...questions];
             [newQuestions[index - 1], newQuestions[index]] =
                 [newQuestions[index], newQuestions[index - 1]];
-            setSectionQuestions(prev => ({
-                ...prev,
-                [selectedSection.id]: newQuestions
-            }));
+            newQuestions.forEach(q => {
+                onUpdateQuestion(q);
+            });
         }
     };
 
     const handleMoveDown = (id: number) => {
         if (!selectedSection) return;
 
-        const questions = currentQuestions;
         const index = questions.findIndex(q => q.id === id);
         if (index < questions.length - 1) {
             const newQuestions = [...questions];
             [newQuestions[index], newQuestions[index + 1]] =
                 [newQuestions[index + 1], newQuestions[index]];
-            setSectionQuestions(prev => ({
-                ...prev,
-                [selectedSection.id]: newQuestions
-            }));
+            newQuestions.forEach(q => {
+                onUpdateQuestion(q);
+            });
         }
     };
-
-    const handleEdit = (id: number) => {
+    /*const handleEdit = (id: number) => {
         if (!selectedSection) return;
 
-        const question = currentQuestions.find(q => q.id === id);
+        const question = questions.find((q: Question) => q.id === id);
         if (question) {
             setEditingQuestion(question);
             setModalOpen(true);
@@ -90,11 +71,9 @@ const McqContent: React.FC<McqContentProps> = ({ selectedSection }) => {
     const handleDelete = (id: number) => {
         if (!selectedSection) return;
 
-        setSectionQuestions(prev => ({
-            ...prev,
-            [selectedSection.id]: prev[selectedSection.id].filter(q => q.id !== id)
-        }));
-    };
+        onDeleteQuestion(id);
+    }; 
+    */
 
     const validateAndParseCSV = (text: string): Question[] => {
         const rows = text.split('\n').filter(row => row.trim() !== '');
@@ -196,16 +175,9 @@ const McqContent: React.FC<McqContentProps> = ({ selectedSection }) => {
             reader.onload = (e) => {
                 const text = e.target?.result as string;
                 const newQuestions = validateAndParseCSV(text);
-
                 if (newQuestions.length > 0) {
-                    setSectionQuestions(prev => ({
-                        ...prev,
-                        [selectedSection.id]: [
-                            ...(prev[selectedSection.id] || []),
-                            ...newQuestions
-                        ]
-                    }));
-                    toast({ description: `Successfully imported ${newQuestions.length} questions`, variant: 'default' });
+                    newQuestions.forEach(q => onAddQuestion(q));
+                    toast({ description: `Successfully imported ${newQuestions.length} questions` });
                 }
             };
             reader.readAsText(file);
@@ -226,7 +198,7 @@ const McqContent: React.FC<McqContentProps> = ({ selectedSection }) => {
                             <div>
                                 <h2 className="text-xl font-semibold">{selectedSection.name}
                                     <span className="text-sm text-gray-500 ml-2">
-                                        ({currentQuestions.length})
+                                        ({questions.length})
                                     </span>
                                 </h2>
                                 <p className="text-sm text-gray-500">
@@ -273,23 +245,19 @@ const McqContent: React.FC<McqContentProps> = ({ selectedSection }) => {
                         </CardHeader>
 
                         <div className="flex-grow overflow-auto px-2">
-                            <div className="h-full overflow-auto">
-                                {currentQuestions.length > 0 ? (
-                                    <QuestionList
-                                        questions={currentQuestions}
-                                        onMoveUp={handleMoveUp}
-                                        onMoveDown={handleMoveDown}
-                                        onEdit={handleEdit}
-                                        onDelete={handleDelete}
-                                    />
-                                ) : (
-                                    <div className="text-center py-12">
-                                        <p className="text-gray-500">
-                                            No questions added yet. Click "Add Question" to get started.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+                            <QuestionList
+                                questions={questions}
+                                onMoveUp={handleMoveUp}
+                                onMoveDown={handleMoveDown}
+                                onEdit={(id) => {
+                                    const question = questions.find(q => q.id === id);
+                                    if (question) {
+                                        setEditingQuestion(question);
+                                        setModalOpen(true);
+                                    }
+                                }}
+                                onDelete={onDeleteQuestion}
+                            />
                         </div>
                     </div>
                 ) : (

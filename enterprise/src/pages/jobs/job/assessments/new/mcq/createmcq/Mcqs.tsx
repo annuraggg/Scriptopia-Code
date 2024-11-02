@@ -1,14 +1,31 @@
 import { motion } from "framer-motion";
 import McqSidebar from "./McqSidebar";
 import McqContent from "./McqContent";
-import { Section } from "../../../../../../../types/mcq.types";
+import { Section, Question } from "../../../../../../../types/mcq.types";
 
 
-const Mcqs = ({ sections, setSections, selectedSection, setSelectedSection }: {
+interface ExtendedMcqProps {
   sections: Section[];
   setSections: React.Dispatch<React.SetStateAction<Section[]>>;
   selectedSection: Section | null;
-  setSelectedSection: React.Dispatch<React.SetStateAction<Section | null>>;
+  setSelectedSection: (section: Section | null) => void;
+  sectionQuestions: {
+    [sectionId: number]: Question[];
+  };
+  onAddQuestion: (sectionId: number, question: Question) => void;
+  onUpdateQuestion: (sectionId: number, question: Question) => void;
+  onDeleteQuestion: (sectionId: number, questionId: number) => void;
+}
+
+const Mcqs: React.FC<ExtendedMcqProps> = ({
+  sections,
+  setSections,
+  selectedSection,
+  setSelectedSection,
+  sectionQuestions,
+  onAddQuestion,
+  onUpdateQuestion,
+  onDeleteQuestion,
 }) => {
   const handleSectionSelect = (section: Section) => {
     setSelectedSection(section);
@@ -27,7 +44,25 @@ const Mcqs = ({ sections, setSections, selectedSection, setSelectedSection }: {
         onSectionSelect={handleSectionSelect}
         selectedSectionId={selectedSection?.id ?? null}
       />
-      <McqContent selectedSection={selectedSection} />
+      <McqContent 
+        selectedSection={selectedSection}
+        questions={selectedSection ? sectionQuestions[selectedSection.id] || [] : []}
+        onAddQuestion={(question) => {
+          if (selectedSection) {
+            onAddQuestion(selectedSection.id, question);
+          }
+        }}
+        onUpdateQuestion={(question) => {
+          if (selectedSection) {
+            onUpdateQuestion(selectedSection.id, question);
+          }
+        }}
+        onDeleteQuestion={(questionId) => {
+          if (selectedSection) {
+            onDeleteQuestion(selectedSection.id, questionId);
+          }
+        }}
+      />
     </motion.div>
   );
 };

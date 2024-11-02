@@ -13,21 +13,21 @@ export type QuestionType =
   | "long-answer"
   | "visual"
   | "peer-review"
-  | "output"
+  | "output"  
   | "fill-in-blanks"
   | "matching";
 
-export interface Question {
-  id: number;
-  type: QuestionType;
-  text: string;
-  options?: Option[];
-  code?: string;
-  imageUrl?: string;
-  maxLimit?: number;
-  blankText?: string;
-  blanksAnswers?: string[];
-}
+  export interface Question {
+    id: number;
+    type: QuestionType;
+    text: string;
+    options?: Option[];
+    code?: string;
+    imageUrl?: string;
+    maxLimit?: number;
+    blankText?: string;
+    blanksAnswers?: string[];
+  }
 
 export interface AddQuestionModalProps {
   isOpen: boolean;
@@ -38,6 +38,10 @@ export interface AddQuestionModalProps {
 
 export interface McqContentProps {
   selectedSection: Section | null;
+  questions: Question[];
+  onAddQuestion: (question: Question) => void;
+  onUpdateQuestion: (question: Question) => void;
+  onDeleteQuestion: (questionId: number) => void;
 }
 
 export interface Section {

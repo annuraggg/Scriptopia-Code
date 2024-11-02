@@ -36,9 +36,6 @@ const tabsList = ["General", "MCQs", "Instructions", "Security", "Feedback"];
 const New = ({ assessmentName }: { assessmentName: string }) => {
   const [activeTab, setActiveTab] = useState("0");
 
-  const [sections, setSections] = useState<Section[]>([]);
-  const [selectedSection, setSelectedSection] = useState<Section | null>(null);
-
   const [assessmentDescription, setAssessmentDescription] = useState("");
   const [timeLimit, setTimeLimit] = useState(0);
   const [passingPercentage, setPassingPercentage] = useState(0);
@@ -54,6 +51,11 @@ const New = ({ assessmentName }: { assessmentName: string }) => {
   );
 
   // MCQs Tab States
+  const [sections, setSections] = useState<Section[]>([]);
+  const [selectedSection, setSelectedSection] = useState<Section | null>(null);
+  const [sectionQuestions, setSectionQuestions] = useState<{
+    [sectionId: number]: Question[];
+  }>({});
 
 
   // Instructions Tab States
@@ -92,6 +94,39 @@ const New = ({ assessmentName }: { assessmentName: string }) => {
     }
   };
 
+  //Mcq question and section handling
+  // const handleUpdateSection = (updatedSection: Section) => {
+  //   setSections(prev => 
+  //     prev.map(section => 
+  //       section.id === updatedSection.id ? updatedSection : section
+  //     )
+  //   );
+  // };
+
+  const handleAddQuestion = (sectionId: number, question: Question) => {
+    setSectionQuestions(prev => ({
+      ...prev,
+      [sectionId]: [...(prev[sectionId] || []), question]
+    }));
+  };
+
+  const handleUpdateQuestion = (sectionId: number, updatedQuestion: Question) => {
+    setSectionQuestions(prev => ({
+      ...prev,
+      [sectionId]: prev[sectionId].map(q => 
+        q.id === updatedQuestion.id ? updatedQuestion : q
+      )
+    }));
+  };
+
+  const handleDeleteQuestion = (sectionId: number, questionId: number) => {
+    setSectionQuestions(prev => ({
+      ...prev,
+      [sectionId]: prev[sectionId].filter(q => q.id !== questionId)
+    }));
+  };
+
+
   const handleTabChange = (key: Key) => {
     const currentTabIndex = parseInt(activeTab);
     const newTabIndex = parseInt(key.toString());
@@ -114,15 +149,22 @@ const New = ({ assessmentName }: { assessmentName: string }) => {
     rangeEnd.setHours(endTime.hour);
     rangeEnd.setMinutes(endTime.minute);
 
-    const formattedMcqs = sections.flatMap(section =>
-      section.questions.map(question => ({
+    const formattedMcqs = sections.flatMap(section => {
+      const questions = sectionQuestions[section.id] || [];
+      return questions.map(question => ({
         sectionName: section.name,
         question: question.text,
         type: mapQuestionType(question.type),
         options: question.options,
         grade: 1,
-      }))
-    );
+        ...(question.code && { code: question.code }),
+        ...(question.imageUrl && { imageUrl: question.imageUrl }),
+        ...(question.maxLimit && { maxLimit: question.maxLimit }),
+        ...(question.blankText && { blankText: question.blankText }),
+        ...(question.blanksAnswers && { blanksAnswers: question.blanksAnswers }),
+      }));
+    });
+
     const step = window.history.state.usr.step;
     const reqBody = {
       assessmentPostingName: assessmentName,
@@ -199,6 +241,10 @@ const New = ({ assessmentName }: { assessmentName: string }) => {
       setSections={setSections}
       selectedSection={selectedSection}
       setSelectedSection={setSelectedSection}
+      sectionQuestions={sectionQuestions}
+      onAddQuestion={handleAddQuestion}
+      onUpdateQuestion={handleUpdateQuestion}
+      onDeleteQuestion={handleDeleteQuestion}
     />,
     <Instructions {...{ instructions, setInstructions }} />,
     <Security
