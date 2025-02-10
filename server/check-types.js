@@ -2,7 +2,7 @@ import { exec } from "child_process";
 import chalk from "chalk";
 import ora from "ora";
 
-// test comment for empty commit
+// test comment for empty commit...
 
 const spinner = ora({
   text: "Checking for type errors...",
